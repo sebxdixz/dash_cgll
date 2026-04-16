@@ -2,11 +2,33 @@
  * Cache persistente en localStorage para las llamadas a la API.
  * TTL por defecto: 24 horas. Sin backend requerido.
  *
- * Uso:
- *   const data = await cachedFetch("/api/easycanchas/bookings?...");
+ * Al detectar un nuevo deploy (BUILD_ID distinto al guardado), se limpia
+ * automáticamente toda la caché para evitar mostrar datos obsoletos.
  */
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 h
+const BUILD_KEY = "ec_build_id";
+
+// NEXT_PUBLIC_BUILD_ID se inyecta en next.config al build time
+const CURRENT_BUILD = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+
+/** Limpia el cache si el build cambió desde la última visita. */
+function evictOnNewDeploy(): void {
+  try {
+    const stored = localStorage.getItem(BUILD_KEY);
+    if (stored !== CURRENT_BUILD) {
+      clearApiCache();
+      localStorage.setItem(BUILD_KEY, CURRENT_BUILD);
+    }
+  } catch {
+    // ignorar — puede fallar en SSR o private browsing
+  }
+}
+
+// Ejecutar una sola vez al importar el módulo (client-side only)
+if (typeof window !== "undefined") {
+  evictOnNewDeploy();
+}
 
 interface CacheEntry<T> {
   data: T;
@@ -43,8 +65,7 @@ function writeEntry<T>(url: string, data: T, ttlMs: number): void {
 
 /**
  * Hace fetch con cache persistente en localStorage.
- * @param url      URL completa (incluyendo query params)
- * @param ttlMs    Tiempo de vida en ms (default 24 h)
+ * Solo cachea respuestas 2xx; lanza un error en respuestas de error.
  */
 export async function cachedFetch<T = unknown>(
   url: string,
@@ -64,7 +85,7 @@ export async function cachedFetch<T = unknown>(
 
 /**
  * Invalida manualmente todas las entradas del cache.
- * Útil para un botón "Actualizar datos".
+ * Útil para el botón "Actualizar datos".
  */
 export function clearApiCache(): void {
   try {
