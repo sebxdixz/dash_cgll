@@ -42,35 +42,43 @@ const renderCustomizedLabel = (props: PieLabelRenderProps) => {
 };
 
 export default function PieChartComponent({ title, data }: PieChartComponentProps) {
+  const hasData = data.length > 0 && data.some((d) => d.value > 0);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5">
       <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">{title}</p>
-      <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="45%"
-            innerRadius={55}
-            outerRadius={85}
-            dataKey="value"
-            labelLine={false}
-            label={renderCustomizedLabel}
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: 12 }}
-            formatter={(val) => [`${val}%`, ""]}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-            formatter={(value) => <span className="text-gray-600">{value}</span>}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      {!hasData ? (
+        <div className="flex items-center justify-center h-[220px] text-sm text-gray-300">
+          Sin datos para el período seleccionado
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="45%"
+              innerRadius={55}
+              outerRadius={85}
+              dataKey="value"
+              labelLine={false}
+              label={renderCustomizedLabel}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: 12 }}
+              formatter={(val) => [`${val}%`, ""]}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+              formatter={(value) => <span className="text-gray-600">{value}</span>}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

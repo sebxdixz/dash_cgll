@@ -43,6 +43,21 @@ export default function SportPivotTable({ rows, showFinancial, title, rowLabel =
     grandTotal.horas    += row.totals.horas;
   }
 
+  if (rows.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="bg-[#8b1c31] px-5 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/90">
+            {title ?? "Reservas por Deporte y Mes"}
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-10 text-sm text-gray-300">
+          Sin datos para el período seleccionado
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       {/* Header */}
