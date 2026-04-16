@@ -311,7 +311,7 @@ export default function GolfPage() {
 
           {/* Gráficos fila 2 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <LineChartComponent data={lineData.length ? lineData : undefined} />
+            <LineChartComponent data={lineData} />
             <PieChartComponent title="Distribución por Género" data={generoData} />
             <HistogramChart data={edadData} />
           </div>
