@@ -19,13 +19,29 @@ const fmtHrs = (n: number) =>
 
 interface SportPivotTableProps {
   rows:          PivotRow[];
-  showFinancial: boolean;   // false mientras carga transactions
-  title?:        string;    // override del header (default "Reservas por Deporte y Mes")
-  rowLabel?:     string;    // label de la primera columna (default "Deporte")
+  showFinancial: boolean;
+  title?:        string;
+  rowLabel?:     string;
 }
 
 export default function SportPivotTable({ rows, showFinancial, title, rowLabel = "Deporte" }: SportPivotTableProps) {
   const months = activePivotMonths(rows);
+  const cols = showFinancial ? 3 : 2;
+
+  // Grand totals
+  const grand: Record<string, { reservas: number; total: number; horas: number }> = {};
+  const grandTotal = { reservas: 0, total: 0, horas: 0 };
+  for (const row of rows) {
+    for (const [m, cell] of Object.entries(row.months)) {
+      if (!grand[m]) grand[m] = { reservas: 0, total: 0, horas: 0 };
+      grand[m].reservas += cell.reservas;
+      grand[m].total    += cell.total;
+      grand[m].horas    += cell.horas;
+    }
+    grandTotal.reservas += row.totals.reservas;
+    grandTotal.total    += row.totals.total;
+    grandTotal.horas    += row.totals.horas;
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -40,39 +56,49 @@ export default function SportPivotTable({ rows, showFinancial, title, rowLabel =
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="text-xs border-collapse" style={{ minWidth: `${140 + (months.length + 1) * cols * 58}px` }}>
           <thead>
-            {/* Fila 1: encabezados de mes */}
+            {/* Row 1 — month group headers */}
             <tr className="bg-[#8b1c31]/10 border-b border-gray-200">
-              <th className="sticky left-0 z-10 bg-[#8b1c31]/10 text-left px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 min-w-[140px]">
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-20 bg-[#8b1c31]/10 text-left px-4 py-2 font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200 align-bottom"
+                style={{ minWidth: 140 }}
+              >
                 {rowLabel}
               </th>
               {months.map((m) => (
                 <th
                   key={m}
-                  colSpan={showFinancial ? 3 : 2}
+                  colSpan={cols}
                   className="text-center px-2 py-2 font-semibold text-gray-600 border-l border-gray-200"
+                  style={{ minWidth: cols * 58 }}
                 >
                   {MONTH_LABEL[m]}
                 </th>
               ))}
               <th
-                colSpan={showFinancial ? 3 : 2}
-                className="text-center px-2 py-2 font-semibold text-[#8b1c31] border-l border-gray-200"
+                colSpan={cols}
+                className="text-center px-2 py-2 font-semibold text-[#8b1c31] border-l-2 border-[#8b1c31]/30"
+                style={{ minWidth: cols * 58 }}
               >
                 Total
               </th>
             </tr>
 
-            {/* Fila 2: sub-columnas */}
+            {/* Row 2 — sub-column labels */}
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-400 uppercase tracking-wider">
-              <th className="sticky left-0 z-10 bg-gray-50 px-4 py-1.5" />
-              {[...months, "__total__"].map((m) => (
-                <th key={`${m}-sub`} colSpan={showFinancial ? 3 : 2} className="border-l border-gray-200">
-                  <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"}`}>
-                    <span className="text-center py-1 px-1">Res.</span>
-                    <span className="text-center py-1 px-1">Hrs</span>
-                    {showFinancial && <span className="text-center py-1 px-1">Total $</span>}
+              {/* sticky left-0 spacer handled by rowSpan on the first th above */}
+              {[...months, "__total__"].map((m, gi) => (
+                <th
+                  key={`${m}-res`}
+                  colSpan={cols}
+                  className={`p-0 ${gi < months.length ? "border-l border-gray-200" : "border-l-2 border-[#8b1c31]/30"}`}
+                >
+                  <div className={`grid ${cols === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                    <span className="text-center py-1.5 text-[10px]">Res.</span>
+                    <span className="text-center py-1.5 text-[10px]">Hrs</span>
+                    {showFinancial && <span className="text-center py-1.5 text-[10px]">$</span>}
                   </div>
                 </th>
               ))}
@@ -84,60 +110,52 @@ export default function SportPivotTable({ rows, showFinancial, title, rowLabel =
               <tr
                 key={row.sport}
                 className={`border-b border-gray-100 hover:bg-amber-50/40 transition-colors ${
-                  i % 2 === 0 ? "bg-white" : "bg-gray-50/40"
+                  i % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                 }`}
               >
-                <td className="sticky left-0 z-10 bg-inherit px-4 py-2.5 font-medium text-gray-800 whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-inherit px-4 py-2.5 font-medium text-gray-800 whitespace-nowrap border-r border-gray-200">
                   {row.sport}
                 </td>
 
-                {months.map((m) => {
+                {months.map((m, mi) => {
                   const cell = row.months[m];
                   return (
                     <td
                       key={m}
-                      colSpan={showFinancial ? 3 : 2}
-                      className="border-l border-gray-200 p-0"
+                      colSpan={cols}
+                      className={`p-0 border-l border-gray-200 ${mi === months.length - 1 ? "border-r-0" : ""}`}
                     >
-                      {cell ? (
-                        <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-100`}>
-                          <span className="text-center py-2 px-1 font-medium text-gray-700">
-                            {cell.reservas.toLocaleString()}
+                      <div className={`grid ${cols === 3 ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-100`}>
+                        <span className="text-center py-2 px-1 font-medium text-gray-700 tabular-nums">
+                          {cell ? cell.reservas.toLocaleString() : <span className="text-gray-200">—</span>}
+                        </span>
+                        <span className="text-center py-2 px-1 text-gray-500 tabular-nums">
+                          {cell ? fmtHrs(cell.horas) : <span className="text-gray-200">—</span>}
+                        </span>
+                        {showFinancial && (
+                          <span className="text-center py-2 px-1 text-[#8b1c31] tabular-nums">
+                            {cell ? fmtCLP(cell.total) : <span className="text-gray-200">—</span>}
                           </span>
-                          <span className="text-center py-2 px-1 text-gray-500">
-                            {fmtHrs(cell.horas)}
-                          </span>
-                          {showFinancial && (
-                            <span className="text-center py-2 px-1 text-[#8b1c31] font-medium">
-                              {fmtCLP(cell.total)}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-100`}>
-                          <span className="text-center py-2 px-1 text-gray-300">—</span>
-                          <span className="text-center py-2 px-1 text-gray-300">—</span>
-                          {showFinancial && <span className="text-center py-2 px-1 text-gray-300">—</span>}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
                   );
                 })}
 
-                {/* Totales */}
+                {/* Totals column */}
                 <td
-                  colSpan={showFinancial ? 3 : 2}
-                  className="border-l-2 border-[#8b1c31]/20 p-0 bg-[#8b1c31]/5"
+                  colSpan={cols}
+                  className="p-0 border-l-2 border-[#8b1c31]/20 bg-[#8b1c31]/5"
                 >
-                  <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
-                    <span className="text-center py-2 px-1 font-bold text-[#8b1c31]">
+                  <div className={`grid ${cols === 3 ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
+                    <span className="text-center py-2 px-1 font-bold text-[#8b1c31] tabular-nums">
                       {row.totals.reservas.toLocaleString()}
                     </span>
-                    <span className="text-center py-2 px-1 font-medium text-gray-600">
+                    <span className="text-center py-2 px-1 font-medium text-gray-600 tabular-nums">
                       {fmtHrs(row.totals.horas)}
                     </span>
                     {showFinancial && (
-                      <span className="text-center py-2 px-1 font-bold text-[#8b1c31]">
+                      <span className="text-center py-2 px-1 font-bold text-[#8b1c31] tabular-nums">
                         {fmtCLP(row.totals.total)}
                       </span>
                     )}
@@ -149,7 +167,7 @@ export default function SportPivotTable({ rows, showFinancial, title, rowLabel =
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={months.length * (showFinancial ? 3 : 2) + 3}
+                  colSpan={months.length * cols + cols + 1}
                   className="px-4 py-10 text-center text-sm text-gray-400"
                 >
                   Sin datos para el período seleccionado
@@ -157,61 +175,46 @@ export default function SportPivotTable({ rows, showFinancial, title, rowLabel =
               </tr>
             )}
 
-            {/* Fila de totales generales */}
-            {rows.length > 1 && (() => {
-              const grand: Record<string, { reservas: number; total: number; horas: number }> = {};
-              let grandTotal = { reservas: 0, total: 0, horas: 0 };
-              for (const row of rows) {
-                for (const [m, cell] of Object.entries(row.months)) {
-                  if (!grand[m]) grand[m] = { reservas: 0, total: 0, horas: 0 };
-                  grand[m].reservas += cell.reservas;
-                  grand[m].total    += cell.total;
-                  grand[m].horas    += cell.horas;
-                }
-                grandTotal.reservas += row.totals.reservas;
-                grandTotal.total    += row.totals.total;
-                grandTotal.horas    += row.totals.horas;
-              }
-              return (
-                <tr className="bg-[#8b1c31]/5 border-t-2 border-[#8b1c31]/20 font-semibold">
-                  <td className="sticky left-0 z-10 bg-[#8b1c31]/5 px-4 py-2.5 text-xs uppercase tracking-wider text-[#8b1c31]">
-                    Total General
-                  </td>
-                  {months.map((m) => (
-                    <td key={m} colSpan={showFinancial ? 3 : 2} className="border-l border-gray-200 p-0">
-                      <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
-                        <span className="text-center py-2 px-1 text-[#8b1c31]">
-                          {(grand[m]?.reservas ?? 0).toLocaleString()}
-                        </span>
-                        <span className="text-center py-2 px-1 text-gray-600">
-                          {fmtHrs(grand[m]?.horas ?? 0)}
-                        </span>
-                        {showFinancial && (
-                          <span className="text-center py-2 px-1 text-[#8b1c31]">
-                            {fmtCLP(grand[m]?.total ?? 0)}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  ))}
-                  <td colSpan={showFinancial ? 3 : 2} className="border-l-2 border-[#8b1c31]/30 p-0 bg-[#8b1c31]/10">
-                    <div className={`grid ${showFinancial ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
-                      <span className="text-center py-2 px-1 font-bold text-[#8b1c31]">
-                        {grandTotal.reservas.toLocaleString()}
+            {/* Grand total row */}
+            {rows.length > 1 && (
+              <tr className="bg-[#8b1c31]/5 border-t-2 border-[#8b1c31]/20 font-semibold">
+                <td className="sticky left-0 z-10 bg-[#8b1c31]/5 px-4 py-2.5 text-[11px] uppercase tracking-wider text-[#8b1c31] border-r border-gray-200 whitespace-nowrap">
+                  Total General
+                </td>
+                {months.map((m) => (
+                  <td key={m} colSpan={cols} className="p-0 border-l border-gray-200">
+                    <div className={`grid ${cols === 3 ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
+                      <span className="text-center py-2 px-1 text-[#8b1c31] tabular-nums">
+                        {(grand[m]?.reservas ?? 0).toLocaleString()}
                       </span>
-                      <span className="text-center py-2 px-1 text-gray-600">
-                        {fmtHrs(grandTotal.horas)}
+                      <span className="text-center py-2 px-1 text-gray-600 tabular-nums">
+                        {fmtHrs(grand[m]?.horas ?? 0)}
                       </span>
                       {showFinancial && (
-                        <span className="text-center py-2 px-1 font-bold text-[#8b1c31]">
-                          {fmtCLP(grandTotal.total)}
+                        <span className="text-center py-2 px-1 text-[#8b1c31] tabular-nums">
+                          {fmtCLP(grand[m]?.total ?? 0)}
                         </span>
                       )}
                     </div>
                   </td>
-                </tr>
-              );
-            })()}
+                ))}
+                <td colSpan={cols} className="p-0 border-l-2 border-[#8b1c31]/30 bg-[#8b1c31]/10">
+                  <div className={`grid ${cols === 3 ? "grid-cols-3" : "grid-cols-2"} divide-x divide-gray-200`}>
+                    <span className="text-center py-2 px-1 font-bold text-[#8b1c31] tabular-nums">
+                      {grandTotal.reservas.toLocaleString()}
+                    </span>
+                    <span className="text-center py-2 px-1 text-gray-600 tabular-nums">
+                      {fmtHrs(grandTotal.horas)}
+                    </span>
+                    {showFinancial && (
+                      <span className="text-center py-2 px-1 font-bold text-[#8b1c31] tabular-nums">
+                        {fmtCLP(grandTotal.total)}
+                      </span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
