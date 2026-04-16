@@ -6,6 +6,19 @@ import type { ECBooking } from "@/lib/easycanchas";
 // Necesario para soportar el fetch del año completo en training (API lenta ~20s/mes)
 export const maxDuration = 300;
 
+/** 30 días para meses ya pasados (datos históricos no cambian). */
+const HISTORICAL_TTL_S = 30 * 24 * 60 * 60;
+/** 26 horas para el mes en curso (mayor que el cron diario de 24h). */
+const CURRENT_TTL_S = 26 * 60 * 60;
+
+function isCurrentMonth(year: string, month: string): boolean {
+  const now = new Date();
+  return (
+    Number(year)  === now.getFullYear() &&
+    Number(month) === now.getMonth() + 1
+  );
+}
+
 function lastDayOfMonth(year: number, month: number): string {
   const d = new Date(year, month, 0); // día 0 del siguiente mes = último día del mes actual
   return `${year}-${String(month).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -55,7 +68,8 @@ export async function GET(request: NextRequest) {
         const mTo   = lastDayOfMonth(Number(fromYear), Number(month));
         try {
           const monthBookings = await fetchBookings(mFrom, mTo, sid);
-          await kvSet(kvKey, monthBookings);
+          const ttl = isCurrentMonth(fromYear, month) ? CURRENT_TTL_S : HISTORICAL_TTL_S;
+          await kvSet(kvKey, monthBookings, ttl);
           return monthBookings;
         } catch {
           return [] as ECBooking[];
