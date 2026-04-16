@@ -8,8 +8,11 @@ const MONTH_LABEL: Record<string, string> = {
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
 };
 
-const fmtCLP = (n: number) =>
-  n === 0 ? "—" : `$${n.toLocaleString("es-CL")}`;
+const fmtCLP = (n: number): string => {
+  if (n === 0) return "—";
+  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  return `$${Math.round(n / 1_000)}K`;
+};
 
 const fmtHrs = (n: number) =>
   n === 0 ? "—" : `${n.toFixed(0)}h`;

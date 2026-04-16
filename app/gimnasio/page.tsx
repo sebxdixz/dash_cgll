@@ -15,7 +15,7 @@ import {
   computeKpis,
   quickKpis,
 } from "@/lib/transforms";
-import { GIMNASIO_SPORTS, SPORT_COLOR } from "@/lib/sports-config";
+import { GIMNASIO_SPORTS, getSportColor } from "@/lib/sports-config";
 import { cachedFetch, clearApiCache } from "@/lib/api-cache";
 import type { ECBooking, ECTransaction, ECUser } from "@/lib/easycanchas";
 import { Users, CalendarCheck, Clock, DollarSign, Dumbbell, Loader2, Filter, RefreshCw } from "lucide-react";
@@ -41,7 +41,11 @@ function buildDateRange(año: string, mes: string) {
   return { from: `${año}-${m}-01`, to: `${año}-${m}-${String(last).padStart(2, "0")}` };
 }
 
-const formatCLP = (val: number) => `$${(val / 1_000_000).toFixed(1)}M`;
+const formatCLP = (val: number): string => {
+  if (val === 0) return "$0";
+  if (Math.abs(val) >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  return `$${Math.round(val / 1_000)}K`;
+};
 
 export default function GimnasioPage() {
   const [año,  setAño]  = useState("2025");
@@ -136,12 +140,12 @@ export default function GimnasioPage() {
     ? pivotRows.map((r) => ({
         name:  r.sport,
         value: Math.round((r.totals.reservas / (kpis.totalReservas || 1)) * 100),
-        color: SPORT_COLOR[r.sport] ?? "#999",
+        color: getSportColor(r.sport),
       }))
     : pivotRows.map((r) => ({
         name:  r.sport,
         value: Math.round((r.totals.reservas / (kpis.totalReservas || 1)) * 100),
-        color: ACTIVITY_COLORS[r.sport] ?? "#999",
+        color: ACTIVITY_COLORS[r.sport] ?? getSportColor(r.sport),
       }));
 
   return (
@@ -207,7 +211,7 @@ export default function GimnasioPage() {
             />
             <KpiCard
               title="Ingresos"
-              value={financialKpis ? formatCLP(financialKpis.ingresosAsociados) : "—"}
+              value={financialKpis ? formatCLP(financialKpis.ingresosAsociados + financialKpis.ingresosGreenFee) : "—"}
               icon={
                 loadingTx
                   ? <Loader2 className="w-4 h-4 text-white/80 animate-spin" />

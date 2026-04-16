@@ -45,7 +45,11 @@ function buildDateRange(año: string, mes: string): { from: string; to: string }
   return { from: `${año}-${month}-01`, to: `${año}-${month}-${String(lastDay).padStart(2, "0")}` };
 }
 
-const formatCLP = (val: number) => `$${(val / 1_000_000).toFixed(0)}M`;
+const formatCLP = (val: number): string => {
+  if (val === 0) return "$0";
+  if (Math.abs(val) >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  return `$${Math.round(val / 1_000)}K`;
+};
 
 // ── Componente ────────────────────────────────────────────────────────────────
 

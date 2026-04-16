@@ -189,7 +189,7 @@ export function findTransactionForBooking(
   return undefined;
 }
 
-/** Normaliza userType para comparaciones ("SOCIO" → "Socio", etc.) */
+/** Normaliza userType para comparaciones — acepta "Socio", "Socio Titular", "Socio Junior", etc. */
 export function isSocio(userType: string): boolean {
-  return userType.toUpperCase() === "SOCIO";
+  return userType.toUpperCase().includes("SOCIO");
 }

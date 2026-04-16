@@ -9,7 +9,7 @@ import BarChartComponent from "@/components/charts/BarChartComponent";
 import SportPivotTable from "@/components/tables/SportPivotTable";
 import BookingsTable from "@/components/tables/BookingsTable";
 import { sportPivot, bookingsByMonth, quickKpis } from "@/lib/transforms";
-import { ACTIVIDADES_SPORTS, SPORT_COLOR } from "@/lib/sports-config";
+import { ACTIVIDADES_SPORTS, getSportColor } from "@/lib/sports-config";
 import { cachedFetch, clearApiCache } from "@/lib/api-cache";
 import type { ECBooking, ECUser } from "@/lib/easycanchas";
 import { Users, CalendarCheck, Clock, BarChart2, Loader2, Filter, RefreshCw } from "lucide-react";
@@ -96,7 +96,7 @@ export default function ActividadesPage() {
   const sportDist = pivotRows.map((r) => ({
     name:  r.sport,
     value: Math.round((r.totals.reservas / (kpis.totalReservas || 1)) * 100),
-    color: SPORT_COLOR[r.sport] ?? "#999",
+    color: getSportColor(r.sport),
   }));
 
   const isPartial = loading && loaded.length > 0;

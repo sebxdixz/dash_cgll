@@ -31,19 +31,26 @@ export function temporalTrend(bookings: ECBooking[], transactions: ECTransaction
   const reservasByMonth = new Map<string, number>();
   const ingresosByMonth = new Map<string, number>();
 
-  const bookingIds = new Set(bookings.map((b) => String(b.id)));
-
   for (const b of bookings) {
     const key = b.localDate.slice(0, 7);
     reservasByMonth.set(key, (reservasByMonth.get(key) ?? 0) + 1);
   }
 
-  for (const tx of transactions) {
-    for (const p of tx.products) {
-      if (p.productId !== 1) continue;
-      if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
-      const key = p.transactionDate.slice(0, 7);
-      ingresosByMonth.set(key, (ingresosByMonth.get(key) ?? 0) + p.productAmount);
+  if (transactions.length > 0) {
+    const bookingIds = new Set(bookings.map((b) => String(b.id)));
+    for (const tx of transactions) {
+      for (const p of tx.products) {
+        if (p.productId !== 1) continue;
+        if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
+        const key = p.transactionDate.slice(0, 7);
+        ingresosByMonth.set(key, (ingresosByMonth.get(key) ?? 0) + p.productAmount);
+      }
+    }
+  } else {
+    // Fallback: agrupar totalAmount de bookings por mes
+    for (const b of bookings) {
+      const key = b.localDate.slice(0, 7);
+      ingresosByMonth.set(key, (ingresosByMonth.get(key) ?? 0) + (b.totalAmount ?? 0));
     }
   }
 
@@ -133,24 +140,36 @@ export function computeKpis(
   const sociosActivos = allUsers.filter((u) => !u.blocked && u.memberId != null).length;
   const totalReservas = bookings.length;
 
-  // Join: solo contar transacciones que correspondan a nuestros bookings filtrados
-  // Clave: booking.id === product.productTransactionId  WHERE  productId === 1
-  const bookingIds = new Set(bookings.map((b) => String(b.id)));
-
   let ingresosAsociados = 0;
   let ingresosGreenFee  = 0;
   let greenFeeCount     = 0;
 
-  for (const tx of transactions) {
-    for (const p of tx.products) {
-      if (p.productId !== 1) continue;
-      // Si hay bookings filtrados, restringir al join; si bookingIds está vacío, no hay nada que contar
-      if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
-      if (isSocio(p.userType)) {
-        ingresosAsociados += p.productAmount;
+  if (transactions.length > 0) {
+    // Fuente preferida: transactions (split correcto Socio/Invitado por userType)
+    // Join: booking.id === product.productTransactionId  WHERE  productId === 1
+    const bookingIds = new Set(bookings.map((b) => String(b.id)));
+    for (const tx of transactions) {
+      for (const p of tx.products) {
+        if (p.productId !== 1) continue;
+        if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
+        if (isSocio(p.userType)) {
+          ingresosAsociados += p.productAmount;
+        } else {
+          ingresosGreenFee += p.productAmount;
+          greenFeeCount++;
+        }
+      }
+    }
+  } else {
+    // Fallback: usar totalAmount de cada booking (disponible sin transactions)
+    // Split por customerCodes: si contiene "socio" → Socios, sino → Green Fee / externo
+    for (const b of bookings) {
+      const amount = b.totalAmount ?? 0;
+      if (b.customerCodes?.toLowerCase().includes("socio")) {
+        ingresosAsociados += amount;
       } else {
-        ingresosGreenFee += p.productAmount;
-        greenFeeCount++;
+        ingresosGreenFee += amount;
+        if (amount > 0) greenFeeCount++;
       }
     }
   }

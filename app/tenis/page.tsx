@@ -34,7 +34,11 @@ function buildDateRange(año: string, mes: string): { from: string; to: string }
   return { from: `${año}-${month}-01`, to: `${año}-${month}-${String(lastDay).padStart(2, "0")}` };
 }
 
-const formatCLP = (val: number) => `$${(val / 1_000_000).toFixed(1)}M`;
+const formatCLP = (val: number): string => {
+  if (val === 0) return "$0";
+  if (Math.abs(val) >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  return `$${Math.round(val / 1_000)}K`;
+};
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
@@ -185,8 +189,8 @@ export default function TenisPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <KpiCard
-              title="Ingresos Asociados"
-              value={loadingTx ? "—" : formatCLP(kpis.ingresosAsociados)}
+              title="Ingresos Totales"
+              value={loadingTx ? "—" : formatCLP(kpis.ingresosAsociados + kpis.ingresosGreenFee)}
               icon={
                 loadingTx
                   ? <Loader2 className="w-4 h-4 text-white/80 animate-spin" />

@@ -13,7 +13,7 @@ import {
   sportPivot,
   quickKpis,
 } from "@/lib/transforms";
-import { ALL_SPORTS, SPORT_COLOR } from "@/lib/sports-config";
+import { ALL_SPORTS, getSportColor } from "@/lib/sports-config";
 import type { ECBooking, ECUser } from "@/lib/easycanchas";
 import { cachedFetch, clearApiCache } from "@/lib/api-cache";
 import { Users, CalendarCheck, Clock, Activity, Loader2, Filter, RefreshCw } from "lucide-react";
@@ -95,7 +95,7 @@ export default function GeneralPage() {
   const sportData   = bookingsBySport(bookings).map((s) => ({
     name:  s.sport,
     value: s.reservas,
-    color: SPORT_COLOR[s.sport] ?? "#999",
+    color: getSportColor(s.sport),
   }));
   const pivotRows   = sportPivot(bookings);
 
