@@ -64,7 +64,7 @@ export const ACTIVIDADES_SPORTS = [
   SPORT_IDS.RESTAURANTE,
 ];
 
-// Todos los deportes para la página General (excluye Restaurante para el KPI)
+// Todos los deportes (incluye Restaurante y Almuerzo Fin de Año para que queden en caché)
 export const ALL_SPORTS = [
   ...GOLF_SPORTS,  // Golf + Campeonatos Golf + Arriendo Carros
   ...TENIS_SPORTS,
@@ -73,6 +73,8 @@ export const ALL_SPORTS = [
   SPORT_IDS.CUMPLEANOS,
   SPORT_IDS.GUARDERIA,
   SPORT_IDS.TALLER_VERANO,
+  SPORT_IDS.ALMUERZO_FIN_AÑO,
+  SPORT_IDS.RESTAURANTE,
 ];
 
 /** Normaliza a minúsculas sin tildes para comparaciones flexibles */

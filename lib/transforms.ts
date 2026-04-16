@@ -36,12 +36,23 @@ export function temporalTrend(bookings: ECBooking[], transactions: ECTransaction
     reservasByMonth.set(key, (reservasByMonth.get(key) ?? 0) + 1);
   }
 
+  const _txBookingIds = new Set(bookings.map((b) => String(b.id)));
+  let _txMatched = 0;
   if (transactions.length > 0) {
-    const bookingIds = new Set(bookings.map((b) => String(b.id)));
     for (const tx of transactions) {
       for (const p of tx.products) {
         if (p.productId !== 1) continue;
-        if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
+        if (_txBookingIds.has(String(p.productTransactionId))) _txMatched++;
+      }
+    }
+  }
+  const _txCoverage = _txBookingIds.size > 0 ? _txMatched / _txBookingIds.size : 0;
+
+  if (transactions.length > 0 && _txCoverage >= 0.05) {
+    for (const tx of transactions) {
+      for (const p of tx.products) {
+        if (p.productId !== 1) continue;
+        if (!_txBookingIds.has(String(p.productTransactionId))) continue;
         const key = p.transactionDate.slice(0, 7);
         ingresosByMonth.set(key, (ingresosByMonth.get(key) ?? 0) + p.productAmount);
       }
@@ -144,14 +155,27 @@ export function computeKpis(
   let ingresosGreenFee  = 0;
   let greenFeeCount     = 0;
 
+  const bookingIds = new Set(bookings.map((b) => String(b.id)));
+
+  // Check transaction coverage: if < 5% of bookings have a matching transaction,
+  // the transaction dataset is incomplete for this sport/period — fall back to b.totalAmount.
+  let txMatchedCount = 0;
   if (transactions.length > 0) {
-    // Fuente preferida: transactions (split correcto Socio/Invitado por userType)
-    // Join: booking.id === product.productTransactionId  WHERE  productId === 1
-    const bookingIds = new Set(bookings.map((b) => String(b.id)));
     for (const tx of transactions) {
       for (const p of tx.products) {
         if (p.productId !== 1) continue;
-        if (bookingIds.size > 0 && !bookingIds.has(String(p.productTransactionId))) continue;
+        if (bookingIds.has(String(p.productTransactionId))) txMatchedCount++;
+      }
+    }
+  }
+  const txCoverage = bookingIds.size > 0 ? txMatchedCount / bookingIds.size : 0;
+
+  if (transactions.length > 0 && txCoverage >= 0.05) {
+    // Sufficient coverage — use transactions for accurate Socio/Invitado split via userType
+    for (const tx of transactions) {
+      for (const p of tx.products) {
+        if (p.productId !== 1) continue;
+        if (!bookingIds.has(String(p.productTransactionId))) continue;
         if (isSocio(p.userType)) {
           ingresosAsociados += p.productAmount;
         } else {
@@ -161,8 +185,7 @@ export function computeKpis(
       }
     }
   } else {
-    // Fallback: usar totalAmount de cada booking (disponible sin transactions)
-    // Split por customerCodes: si contiene "socio" → Socios, sino → Green Fee / externo
+    // Coverage too low or no transactions — use b.totalAmount to avoid severely underreporting
     for (const b of bookings) {
       const amount = b.totalAmount ?? 0;
       if (b.customerCodes?.toLowerCase().includes("socio")) {
