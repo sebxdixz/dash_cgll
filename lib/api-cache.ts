@@ -53,7 +53,10 @@ export async function cachedFetch<T = unknown>(
   const cached = readEntry<T>(url);
   if (cached !== null) return cached;
 
-  const res  = await fetch(url);
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} — ${url}`);
+  }
   const data = await res.json() as T;
   writeEntry(url, data, ttlMs);
   return data;
