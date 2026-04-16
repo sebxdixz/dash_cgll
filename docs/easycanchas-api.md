@@ -1,6 +1,6 @@
 # Documentación de la API EasyCanchas — Club de Golf Los Leones
 
-**Ambiente:** `training.easycancha.com` (ambiente de entrenamiento/staging del club)  
+**Ambiente:** `training.easycancha.com` (endpoint oficial habilitado por EasyCanchas para el CGLL)  
 **Club ID:** `350`  
 **Última actualización:** Abril 2026
 
@@ -395,12 +395,14 @@ El campo `totalAmount` en `ECBooking` y el campo `productAmount` en `ECProduct` 
 
 ### Cobertura de transacciones
 
-En el ambiente training del CGLL, la cobertura de transacciones es **baja**:
+La cobertura de transacciones en la API del CGLL es **baja**:
 
-- **2025 (año completo):** ~924 transacciones totales para ~110,440 reservas → cobertura ~0.8%
-- **Golf 2025:** ~975 bookingIds con match en transacciones de ~32,591 reservas → ~3% de cobertura
+- **2025 (año completo):** ~924 transacciones para ~110,440 reservas → cobertura ~0.8%
+- **Golf 2025:** ~975 bookingIds con match en transacciones de ~32,591 reservas → ~3%
 
-Esto significa que **para la mayoría de los períodos, el fallback a `totalAmount` se activa**. Las transacciones disponibles en training son una muestra, no el set completo de producción.
+Esto ocurre porque EasyCanchas solo registra transacciones cuando hay un cobro efectivo — los socios que reservan canchas cubiertas por su membresía mensual **no generan transacción**. Esto no es un problema de datos incompletos sino el comportamiento esperado del sistema.
+
+Consecuencia: **para la mayoría de los períodos, el fallback a `totalAmount` se activa**.
 
 **Consecuencia para los KPIs financieros:**
 - Con cobertura <5%: `ingresosAsociados` + `ingresosGreenFee` se calculan desde `totalAmount`
@@ -411,7 +413,7 @@ Esto significa que **para la mayoría de los períodos, el fallback a `totalAmou
 
 ## Limitaciones y comportamiento conocido
 
-### Performance del ambiente training
+### Performance de la API
 - `usersReport`: ~3-5 segundos
 - `bookingsReport` (por mes/deporte): ~5-15 segundos
 - `transactionsReport` (por mes): **40-60 segundos** — el endpoint más lento
