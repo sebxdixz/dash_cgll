@@ -79,9 +79,11 @@ const columns = [
   }),
   helper.accessor("totalAmount", {
     header: "Monto",
-    cell: (info) => (
-      <span className="font-semibold text-[#8b1c31]">{formatCLP(info.getValue())}</span>
-    ),
+    cell: (info) => {
+      const val = info.getValue();
+      if (!val || val === 0) return <span className="text-gray-300">—</span>;
+      return <span className="font-semibold text-[#8b1c31]">{formatCLP(val)}</span>;
+    },
   }),
   helper.accessor("bookedBy", {
     header: "Agendado por",

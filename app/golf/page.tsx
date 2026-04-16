@@ -51,6 +51,12 @@ const formatCLP = (val: number): string => {
   return `$${Math.round(val / 1_000)}K`;
 };
 
+const clpSubtitle = (val: number): string => {
+  if (Math.abs(val) >= 1_000_000) return "CLP millones";
+  if (Math.abs(val) >= 1_000) return "CLP miles";
+  return "CLP";
+};
+
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export default function GolfPage() {
@@ -228,8 +234,8 @@ export default function GolfPage() {
         </div>
       ) : (
         <>
-          {/* KPIs fila 1: financieros */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* KPIs — 3 + 3 para balance visual */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <KpiCard
               title="Socios Activos"
               value={kpis.sociosActivos.toLocaleString()}
@@ -243,6 +249,14 @@ export default function GolfPage() {
               subtitle="Período seleccionado"
             />
             <KpiCard
+              title="Horas Ocupadas"
+              value={kpis.horasOcupadas.toLocaleString()}
+              icon={<Clock className="w-4 h-4 text-white/80" />}
+              subtitle="Tiempo en cancha"
+            />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <KpiCard
               title="Ingresos Socios"
               value={loadingTx ? "—" : formatCLP(kpis.ingresosAsociados)}
               icon={
@@ -250,7 +264,7 @@ export default function GolfPage() {
                   ? <Loader2 className="w-4 h-4 text-white/80 animate-spin" />
                   : <DollarSign className="w-4 h-4 text-white/80" />
               }
-              subtitle={loadingTx ? "Calculando..." : "CLP millones"}
+              subtitle={loadingTx ? "Calculando..." : clpSubtitle(kpis.ingresosAsociados)}
             />
             <KpiCard
               title="Green Fees"
@@ -262,25 +276,11 @@ export default function GolfPage() {
               }
               subtitle={loadingTx ? "Calculando..." : `${kpis.greenFees} accesos externos`}
             />
-          </div>
-
-          {/* KPIs fila 2: uso */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard
-              title="Horas Ocupadas"
-              value={kpis.horasOcupadas.toLocaleString()}
-              icon={<Clock className="w-4 h-4 text-white/80" />}
-              subtitle="Tiempo en cancha"
-            />
             <KpiCard
               title="Solicitudes de Hoyos"
               value={totalHoyos.toLocaleString()}
               icon={<Flag className="w-4 h-4 text-white/80" />}
-              subtitle={
-                hoyosData.length > 0
-                  ? hoyosData.slice(0, 3).map((h) => `${h.name}: ${h.value}`).join(" · ")
-                  : "Tee times de golf"
-              }
+              subtitle="Tee times de golf"
             />
           </div>
 

@@ -22,7 +22,16 @@ interface LineChartComponentProps {
   data?: DataPoint[];
 }
 
-const formatIngresos = (val: number) => `$${(val / 1_000_000).toFixed(1)}M`;
+const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const formatIngresos = (val: number) => {
+  if (val === 0) return "$0";
+  if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  return `$${Math.round(val / 1_000)}K`;
+};
+const formatFecha = (v: string) => {
+  const m = Number(v.slice(5, 7)) - 1;
+  return MONTHS_SHORT[m] ?? v.slice(0, 7);
+};
 
 export default function LineChartComponent({ data }: LineChartComponentProps) {
   const chartData = data ?? tendenciaTemporal;
@@ -38,8 +47,8 @@ export default function LineChartComponent({ data }: LineChartComponentProps) {
           <XAxis
             dataKey="fecha"
             tick={{ fontSize: 10, fill: "#6b7280" }}
-            tickFormatter={(v) => v.slice(0, 7)}
-            interval={Math.max(0, Math.floor(chartData.length / 6) - 1)}
+            tickFormatter={formatFecha}
+            interval={Math.max(0, Math.floor(chartData.length / 8) - 1)}
             axisLine={false}
             tickLine={false}
           />

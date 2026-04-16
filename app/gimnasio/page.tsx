@@ -47,6 +47,12 @@ const formatCLP = (val: number): string => {
   return `$${Math.round(val / 1_000)}K`;
 };
 
+const clpSubtitle = (val: number): string => {
+  if (Math.abs(val) >= 1_000_000) return "CLP millones";
+  if (Math.abs(val) >= 1_000) return "CLP miles";
+  return "CLP";
+};
+
 export default function GimnasioPage() {
   const [año,  setAño]  = useState("2025");
   const [mes,  setMes]  = useState("Todos");
@@ -217,7 +223,7 @@ export default function GimnasioPage() {
                   ? <Loader2 className="w-4 h-4 text-white/80 animate-spin" />
                   : <DollarSign className="w-4 h-4 text-white/80" />
               }
-              subtitle={loadingTx ? "Calculando..." : "CLP millones"}
+              subtitle={loadingTx ? "Calculando..." : clpSubtitle(financialKpis ? financialKpis.ingresosAsociados + financialKpis.ingresosGreenFee : 0)}
             />
           </div>
 

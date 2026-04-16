@@ -40,6 +40,12 @@ const formatCLP = (val: number): string => {
   return `$${Math.round(val / 1_000)}K`;
 };
 
+const clpSubtitle = (val: number): string => {
+  if (Math.abs(val) >= 1_000_000) return "CLP millones";
+  if (Math.abs(val) >= 1_000) return "CLP miles";
+  return "CLP";
+};
+
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export default function TenisPage() {
@@ -122,8 +128,9 @@ export default function TenisPage() {
   );
 
   // Derivados
-  const kpis      = computeKpis(filtered, transactions, users);
-  const barData   = bookingsByMonth(filtered);
+  const kpis           = computeKpis(filtered, transactions, users);
+  const usuariosUnicos = useMemo(() => new Set(filtered.map((b) => b.userId)).size, [filtered]);
+  const barData        = bookingsByMonth(filtered);
   const pivotRows = sportPivot(deporte === "Todos" ? bookings : filtered);
 
   // Pie:
@@ -196,7 +203,7 @@ export default function TenisPage() {
                   ? <Loader2 className="w-4 h-4 text-white/80 animate-spin" />
                   : <DollarSign className="w-4 h-4 text-white/80" />
               }
-              subtitle={loadingTx ? "Calculando..." : "CLP millones"}
+              subtitle={loadingTx ? "Calculando..." : clpSubtitle(kpis.ingresosAsociados + kpis.ingresosGreenFee)}
             />
             <KpiCard
               title="Total Reservas"
@@ -205,10 +212,10 @@ export default function TenisPage() {
               subtitle="Período seleccionado"
             />
             <KpiCard
-              title="Socios Activos"
-              value={kpis.sociosActivos.toLocaleString()}
+              title="Usuarios Únicos"
+              value={usuariosUnicos.toLocaleString()}
               icon={<Users className="w-4 h-4 text-white/80" />}
-              subtitle="Membresías vigentes"
+              subtitle="Personas con reservas"
             />
             <KpiCard
               title="Horas Ocupadas"

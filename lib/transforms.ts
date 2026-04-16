@@ -111,7 +111,7 @@ export function genderBreakdown(users: ECUser[]) {
     { name: "Femenino",   value: Math.round((female / total) * 100), color: "#c9a87c" },
   ];
   if (other > 0) {
-    result.push({ name: "No especificado", value: Math.round((other / total) * 100), color: "#d7c9ad" });
+    result.push({ name: "No especificado", value: Math.round((other / total) * 100), color: "#6b7280" });
   }
   return result;
 }

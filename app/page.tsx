@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Header from "@/components/layout/Header";
 import KpiCard from "@/components/kpi/KpiCard";
 import SelectDropdown from "@/components/filters/SelectDropdown";
@@ -90,14 +90,22 @@ export default function GeneralPage() {
   }, [año, mes, fetchData]);
 
   // Derivados
-  const kpis        = quickKpis(bookings, users);
-  const barData     = bookingsByMonth(bookings);
-  const sportData   = bookingsBySport(bookings).map((s) => ({
-    name:  s.sport,
-    value: s.reservas,
-    color: getSportColor(s.sport),
-  }));
-  const pivotRows   = sportPivot(bookings);
+  const kpis      = quickKpis(bookings, users);
+  const barData   = bookingsByMonth(bookings);
+  const pivotRows = sportPivot(bookings);
+
+  // Pie: agrupar deportes < 3% en "Otros" para evitar slices ilegibles
+  const sportData = useMemo(() => {
+    const raw   = bookingsBySport(bookings);
+    const total = raw.reduce((s, r) => s + r.reservas, 0) || 1;
+    const threshold = total * 0.03;
+    const main  = raw.filter((s) => s.reservas >= threshold);
+    const otros = raw.filter((s) => s.reservas < threshold);
+    const otrosTotal = otros.reduce((s, r) => s + r.reservas, 0);
+    const result = main.map((s) => ({ name: s.sport, value: s.reservas, color: getSportColor(s.sport) }));
+    if (otrosTotal > 0) result.push({ name: "Otros", value: otrosTotal, color: "#9ca3af" });
+    return result;
+  }, [bookings]);
 
   const totalSports = ALL_SPORTS.length;
   const isPartial   = loading || doneCount < totalSports;
@@ -140,11 +148,11 @@ export default function GeneralPage() {
         <div className="bg-white rounded-2xl border border-gray-200 px-5 py-3 mb-6 flex items-center gap-3">
           <Loader2 className="w-4 h-4 animate-spin text-[#8b1c31] shrink-0" />
           <div className="flex-1">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Cargando deportes... {doneCount}/{totalSports}</span>
-              <span>{loaded.join(", ")}</span>
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+              <span>Cargando datos…</span>
+              <span className="font-medium text-[#8b1c31]">{doneCount}/{totalSports} deportes</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#8b1c31] rounded-full transition-all duration-300"
                 style={{ width: `${(doneCount / totalSports) * 100}%` }}
